@@ -1,0 +1,119 @@
+
+resources:
+ repositories:
+   - repository: terraform1
+     type: git
+     name: 'testterraform/terraform1'  # Replace with the project and repo name
+   - repository: terraform2
+     type: git
+     name: 'testterraform/terraform2'  # Replace with the project and repo name
+     
+trigger:
+- main
+
+pool:
+  name: Default
+
+variables:
+  - group: variables_data  # Replace with Variable Group
+
+steps:
+- checkout: self
+- checkout: terraform2
+#for repo terraform1
+- task: TerraformInstaller@1
+  displayName: terraform install
+  inputs:
+    terraformVersion: 'latest'
+ 
+- task: TerraformTaskV4@4
+  displayName: tf init
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    backendServiceArm: 'serviceTest'
+    backendAzureRmResourceGroupName: 'st-rg'
+    backendAzureRmStorageAccountName: 'stvm0077'
+    backendAzureRmContainerName: 'prod-tfstate'
+    backendAzureRmKey: 'prod.terraform.tfstate'
+    workingDirectory: $(Build.SourcesDirectory)/terraform1
+  env:
+    TF_LOG: DEBUG
+  
+- task: TerraformTaskV4@4
+  displayName: tf validate
+  inputs:
+    provider: 'azurerm'
+    command: 'validate'
+    workingDirectory: $(Build.SourcesDirectory)/terraform1
+ 
+- task: TerraformTaskV4@4
+  displayName: tf plan
+  inputs:
+    provider: 'azurerm'
+    command: 'plan'
+    environmentServiceNameAzureRM: 'serviceTest'
+    commandOptions: "-var=location=$(location) -var=resource_group=$(resource_group) -var=virtual_network_name=$(virtual_network_name)"
+    workingDirectory: $(Build.SourcesDirectory)/terraform1   
+- task: TerraformTaskV4@4
+  displayName: tf apply
+  inputs:
+    provider: 'azurerm'
+    command: 'apply'
+    environmentServiceNameAzureRM: 'serviceTest'
+    commandOptions: "-var=location=$(location) -var=resource_group=$(resource_group) -var=virtual_network_name=$(virtual_network_name) -auto-approve"
+    workingDirectory: $(Build.SourcesDirectory)/terraform1
+
+#for Repo terraform2
+- task: TerraformInstaller@1
+  displayName: terraform install
+  inputs:
+    terraformVersion: 'latest'
+ 
+- task: TerraformTaskV4@4
+  displayName: tf init
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    backendServiceArm: 'serviceTest'
+    backendAzureRmResourceGroupName: 'st-rg'
+    backendAzureRmStorageAccountName: 'stvm0077'
+    backendAzureRmContainerName: 'prod-tfstate'
+    backendAzureRmKey: 'prod.terraform.tfstate'
+    workingDirectory: $(Build.SourcesDirectory)/terraform2
+  env:
+    TF_LOG: DEBUG
+  
+- task: TerraformTaskV4@4
+  displayName: tf validate
+  inputs:
+    provider: 'azurerm'
+    command: 'validate'
+    workingDirectory: $(Build.SourcesDirectory)/terraform2
+ 
+- task: TerraformTaskV4@4
+  displayName: tf plan
+  inputs:
+    provider: 'azurerm'
+    command: 'plan'
+    environmentServiceNameAzureRM: 'serviceTest'
+    commandOptions: "-var=location1=$(location1) -var=rg=$(rg) -var=vnet=$(vnet)"
+    workingDirectory: $(Build.SourcesDirectory)/terraform2 
+- task: TerraformTaskV4@4
+  displayName: tf apply
+  inputs:
+    provider: 'azurerm'
+    command: 'apply'
+    environmentServiceNameAzureRM: 'serviceTest'
+    commandOptions: "-var=location1=$(location1) -var=rg=$(rg) -var=vnet=$(vnet) -auto-approve"
+    workingDirectory: $(Build.SourcesDirectory)/terraform2
+
+# - script: |
+#       echo "Resource Group: $(resource_group)"
+#       echo "RG: $(rg)"
+#       echo "Virtual Network Name: $(virtual_network_name)"
+#       echo "VNet: $(vnet)"
+#       echo "Location: $(location)"
+#       echo "Location1: $(location1)"
+#       args: '-auto-approve'
+    
